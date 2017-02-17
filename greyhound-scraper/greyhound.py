@@ -7,29 +7,38 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 
-browser = webdriver.Chrome()
-browser.get("https://www.greyhound.ca/")
+def get_fares(origin, destination, date=None):
+    browser = webdriver.Chrome()
+    browser.get("https://www.greyhound.ca/")
 
-#fill out form fields
-origin_input = browser.find_element_by_id("ctl00_body_search_listOrigin_Input")
-destination_input = browser.find_element_by_id("ctl00_body_search_listDestination_Input")
+    #fill out form fields
+    origin_input = browser.find_element_by_id("ctl00_body_search_listOrigin_Input")
+    destination_input = browser.find_element_by_id("ctl00_body_search_listDestination_Input")
 
-origin_input.send_keys("London, ON")
-destination_input.send_keys("Toronto, ON")
-time.sleep(0.5) #Allow the dropdowns to appear
-origin_input.send_keys(Keys.ENTER)
-destination_input.send_keys(Keys.ENTER)
+    if date:
+        date_input = browser.find_element_by_id("ctl00_body_search_dateDepart_dateInput")
+        date_input.clear()
+        date_input.send_keys(date)
 
-#submit the form
-browser.find_element_by_id("ticketsSearchSchedules").click()
+    origin_input.send_keys(origin)
+    destination_input.send_keys(destination)
+    time.sleep(0.5) #Allow the dropdowns to appear
+    origin_input.send_keys(Keys.ENTER)
+    destination_input.send_keys(Keys.ENTER)
 
-#wait until the results are displayed 
-wait = WebDriverWait(browser, 10)
-wait.until(EC.title_is("Greyhound.ca | Step 2"))
+    #submit the form
+    browser.find_element_by_id("ticketsSearchSchedules").click()
 
-results_element = browser.find_element_by_id("tableDepart") 
-results_html = results_element.get_attribute("innerHTML")
-tree = html.fromstring(results_html)
+    #wait until the results are displayed 
+    wait = WebDriverWait(browser, 10)
+    wait.until(EC.title_is("Greyhound.ca | Step 2"))
+
+    results_element = browser.find_element_by_id("tableDepart") 
+    results_html = results_element.get_attribute("innerHTML")
+    tree = html.fromstring(results_html)
+
+if __name__ == "__main__":
+    get_fares(origin="London, ON", destination="Toronto, ON", date="17/02/2017") 
 
 #TODO: Output the results tree as a .csv or something similair
 #TODO: Loop through a range of dates
