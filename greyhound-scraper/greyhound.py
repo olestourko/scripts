@@ -6,6 +6,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
+from datetime import date, timedelta
 
 def get_fares(origin, destination, date=None):
     browser = webdriver.Chrome()
@@ -38,7 +39,12 @@ def get_fares(origin, destination, date=None):
     tree = html.fromstring(results_html)
 
 if __name__ == "__main__":
-    get_fares(origin="London, ON", destination="Toronto, ON", date="17/02/2017") 
+    start_date = date(2017, 02, 17)
+    end_date = date(2017, 02, 20)
+    delta = end_date - start_date
+    for i in range(delta.days):
+        date = (start_date + timedelta(i)).strftime("%d/%m/%Y")
+        get_fares(origin="London, ON", destination="Toronto, ON", date=date)
 
 #TODO: Output the results tree as a .csv or something similair
 #TODO: Loop through a range of dates
