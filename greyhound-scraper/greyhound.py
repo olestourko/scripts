@@ -1,6 +1,5 @@
 from __future__ import print_function
 from lxml import html
-from lxml import etree
 from lxml.cssselect import CSSSelector
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -9,9 +8,14 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 from datetime import date, timedelta
+import json
 
 class GetFaresTask:
     browser = None
+
+    def __del__(self):
+        if self.browser:
+            self.browser.close()
 
     def __get_browser(self):
         if not self.browser:
@@ -61,7 +65,7 @@ class GetFaresTask:
             }
 
             try:
-                fare["web_price"] = row.xpath(CSSSelector(".ptStep2f1 label input").path)[0].tail
+                fare["web_price"] = row.xpath(CSSSelector(".ptStep2f1 label input").path)[0].tail #.tail is a bit like .text, but it returns everything after the element's closing tag.
             except:
                 fare["web_price"] = None
 
@@ -70,16 +74,20 @@ class GetFaresTask:
         return fares
 
 if __name__ == "__main__":
-    start_date = date(2017, 02, 18)
-    end_date = date(2017, 02, 18)
+    start_date = date(2017, 02, 19)
+    end_date = date(2017, 02, 19)
     delta = end_date - start_date
 
     get_fares_task = GetFaresTask()
-
+    
+    schedules = dict()
     for i in range(delta.days + 1):
         date = (start_date + timedelta(i)).strftime("%d/%m/%Y")
         fares = get_fares_task.get_fares(origin="London, ON", destination="Toronto, ON", date=date)
-        print(fares)
+        schedules[date] = fares
+
+    json_schedules = json.dumps(schedules, sort_keys=True, indent=4, separators=(',', ':'))
+    print(json_schedules)
 
 #TODO: Output the results tree as a .csv or something similair
 #TODO: Dynamically find the elements based on context, in case greyhound changes the IDs or title.
