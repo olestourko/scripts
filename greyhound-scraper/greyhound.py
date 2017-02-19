@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from __future__ import print_function
 from lxml import html
 from lxml.cssselect import CSSSelector
@@ -6,7 +7,9 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import argparse
 import time
+import datetime
 from datetime import date, timedelta
 import json
 
@@ -57,13 +60,18 @@ class GetFaresTask:
 
         fares = list()
         for row in tree.xpath(CSSSelector("table .innerRow").path):
-            fare = {
-                    "depart": row.xpath(CSSSelector(".ptStep2departCol").path)[0].text, #.text returns the text before the first element
-                    "arrive": row.xpath(CSSSelector(".ptStep2arriveCol").path)[0].text,
-                    "duration": row.xpath(CSSSelector(".ptStep2travelTimeCol").path)[0].text,
-                    "transfers": row.xpath(CSSSelector(".ptStep2transfersCol").path)[0].text
-            }
+            #Get the fare times and transfers. An exception will be thrown if the correct fields aren't found (happens when no fares left on this date)
+            try:
+                fare = {
+                        "depart": row.xpath(CSSSelector(".ptStep2departCol").path)[0].text, #.text returns the text before the first element
+                        "arrive": row.xpath(CSSSelector(".ptStep2arriveCol").path)[0].text,
+                        "duration": row.xpath(CSSSelector(".ptStep2travelTimeCol").path)[0].text,
+                        "transfers": row.xpath(CSSSelector(".ptStep2transfersCol").path)[0].text
+                }
+            except:
+                continue
 
+            #Get the fare price. If the price isn't found (sold out/unavailable), it will default to None.
             try:
                 fare["web_price"] = row.xpath(CSSSelector(".ptStep2f1 label input").path)[0].tail #.tail is a bit like .text, but it returns everything after the element's closing tag.
             except:
@@ -74,20 +82,29 @@ class GetFaresTask:
         return fares
 
 if __name__ == "__main__":
-    start_date = date(2017, 02, 19)
-    end_date = date(2017, 02, 19)
-    delta = end_date - start_date
+    parser = argparse.ArgumentParser(description='Scrapes the Greyhound Canada website for fares across a specified date range.')
+    parser.add_argument('--origin', '-o', dest='origin', help='the origin, as it appears in the dropdown on the website', required=True)
+    parser.add_argument('--destination', '-d', dest='destination', help='the destination, as it appears in the dropdown on the website', required=True)
+    parser.add_argument('--from-date', '-f', dest='from_date', help='the starting date (d/m/Y)', required=False, default=date.today())
+    parser.add_argument('--to-date', '-t', dest='to_date', help='the ending date (d/m/Y)', required=False, default=date.today())
+    args = parser.parse_args()
 
+    if type(args.from_date) is str:
+        args.from_date = datetime.datetime.strptime(args.from_date, "%d/%m/%Y").date() #returns datetime otherwise
+
+    if type(args.to_date) is str:
+        args.to_date = datetime.datetime.strptime(args.to_date, "%d/%m/%Y").date()
+
+
+    delta = args.to_date - args.from_date
     get_fares_task = GetFaresTask()
-    
     schedules = dict()
     for i in range(delta.days + 1):
-        date = (start_date + timedelta(i)).strftime("%d/%m/%Y")
-        fares = get_fares_task.get_fares(origin="London, ON", destination="Toronto, ON", date=date)
+        date = (args.from_date + timedelta(i)).strftime("%d/%m/%Y")
+        fares = get_fares_task.get_fares(origin=args.origin, destination=args.destination, date=date)
         schedules[date] = fares
 
     json_schedules = json.dumps(schedules, sort_keys=True, indent=4, separators=(',', ':'))
     print(json_schedules)
 
-#TODO: Output the results tree as a .csv or something similair
 #TODO: Dynamically find the elements based on context, in case greyhound changes the IDs or title.
