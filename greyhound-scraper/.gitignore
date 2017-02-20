@@ -1,3 +1,6 @@
 *.swp
 geckodriver.log
 schedules.list
+
+#Google Sheets sync
+client_secret.json
