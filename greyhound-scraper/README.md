@@ -30,3 +30,10 @@ optional arguments:
 - Selenium for Python docs [link](http://selenium-python.readthedocs.io/getting-started.html)
 - Hitchhiker's Guide to Python: [Web Scraping](http://docs.python-guide.org/en/latest/scenarios/scrape/)
 - Automate The Boring Stuff with Python : [Web Scraping](https://automatetheboringstuff.com/chapter11/)
+
+
+##Writing output to a google sheet
+You'll need to generate a credentials for yourself as described [here](https://developers.google.com/sheets/api/quickstart/python), and then:
+```
+python greyhound.py --destination "Toronto, ON" --origin "London, ON" --to-date "21/02/2017" | python google_sync.py --sheet-id <sheet-id>
+```

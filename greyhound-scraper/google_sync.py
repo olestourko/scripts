@@ -1,7 +1,10 @@
 from __future__ import print_function
 import httplib2
 import os
+
 import argparse
+import sys
+import json
 
 from apiclient import discovery
 from oauth2client import client
@@ -45,25 +48,23 @@ def get_credentials(flags):
 	return credentials
 
 if __name__ == "__main__":
-	parser = argparse.ArgumentParser(parents=[tools.argparser], description="Writes schedules to a google sheet.")
+	parser = argparse.ArgumentParser(parents=[tools.argparser], description="Reads Greyhound schedules from a JSON object on stdin and writes them to a google sheet.")
 	parser.add_argument("--sheet-id", "-s", dest="sheet_id", help="the google sheet ID", required=True)
 	args = parser.parse_args()
+
+	# read in a JSON-formatted list of schedules and covert it to a dict
+	json_string = sys.stdin.read()
+	schedules = json.loads(json_string)
 
 	credentials = get_credentials(args)
 	http = credentials.authorize(httplib2.Http())
 	discoveryUrl = 'https://sheets.googleapis.com/$discovery/rest?version=v4'
 	service = discovery.build('sheets', 'v4', http=http, discoveryServiceUrl=discoveryUrl)
 
-	#read from the spreedsheet
-	result = service.spreadsheets().values().get(spreadsheetId=args.sheet_id, range="A1").execute()
-	print(result)
-
-	#write to the spreedsheet
-	values = [
-		["BBB", "CCC"]
-	]
+	#write to the spreedsheet)
+	flat_fares = [[day, fare["depart"], fare["arrive"], fare["transfers"], fare["web_price"]] for day, fares in schedules.iteritems() for fare in fares]
 	body = {
-		'values': values
+		'values': flat_fares
 	}
-	result = service.spreadsheets().values().update(spreadsheetId=args.sheet_id, range="A1:B1", body=body, valueInputOption="RAW").execute()
-
+	range_name = "A1:{}".format(len(flat_fares))
+	result = service.spreadsheets().values().update(spreadsheetId=args.sheet_id, range=range_name, body=body, valueInputOption="RAW").execute()

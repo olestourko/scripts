@@ -43,7 +43,7 @@ class GetFaresTask:
         origin_input.send_keys(origin)
         destination_input.clear()
         destination_input.send_keys(destination)
-        time.sleep(0.5) #Allow the dropdowns to appear
+        time.sleep(1) #Allow the dropdowns to appear
         origin_input.send_keys(Keys.ENTER)
         destination_input.send_keys(Keys.ENTER)
 
